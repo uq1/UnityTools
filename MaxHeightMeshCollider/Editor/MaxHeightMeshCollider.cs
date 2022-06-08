@@ -198,6 +198,11 @@ namespace MaxHeightMeshCollider
                 }
             }
 
+            if (newVerts == null || newTris == null || newVerts.Count <= 0 || newTris.Count <= 0)
+            {
+                return;
+            }
+
             newMesh.SetVertices(newVerts);
             newMesh.SetTriangles(newTris, 0);
             newMesh.SetNormals(newNormals);
@@ -224,6 +229,12 @@ namespace MaxHeightMeshCollider
                 }
                 
                 var simplifiedMesh = meshSimplifier.ToMesh();
+
+                if (simplifiedMesh.vertexCount <= 0 || simplifiedMesh.triangles.Length <= 0)
+                {
+                    return;
+                }
+
                 simplifiedMesh.name = newMesh.name;
                 collider.sharedMesh = simplifiedMesh;
                 AssetDatabase.CreateAsset(simplifiedMesh, prefabPath);
