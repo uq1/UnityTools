@@ -32,6 +32,7 @@ namespace RemoveInactiveMeshRenderers
         
 #if UNITY_PROGRESSBAR
         static MethodInfo m_Display = null;
+        static MethodInfo m_Clear = null;
 
         float progress = -1.0f;
         string progressText = "";
@@ -46,6 +47,7 @@ namespace RemoveInactiveMeshRenderers
             if (type != null)
             {
                 m_Display = type.GetMethod("Display");
+                m_Clear = type.GetMethod("Clear");
             }
         }
         void ProgressBarShow(string text, float percent)
@@ -64,7 +66,19 @@ namespace RemoveInactiveMeshRenderers
         {
             progress = 0.0f;
             progressText = "";
-            Canvas.ForceUpdateCanvases();
+
+            if (m_Display != null)
+            {
+                m_Display.Invoke(null, new object[] { progressText, progress });
+                Canvas.ForceUpdateCanvases();
+            }
+
+            if (m_Clear != null)
+            {
+                m_Clear.Invoke(null, null);
+            }
+
+            m_Display = null;
         }
 #elif INWINDOW_PROGRESS
         float progress = -1.0f;
@@ -141,6 +155,7 @@ namespace RemoveInactiveMeshRenderers
                 numCompleted++;
             }
 
+            ProgressBarShow("Removing Inactive Mesh Renderers", (float)totalObjects / (float)totalObjects);
             ProgressBarEnd();
         }
     

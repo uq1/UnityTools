@@ -1,12 +1,67 @@
+#define UNITY_PROGRESSBAR
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using System.Linq;
+using System.Reflection;
 
 namespace MeshSplit
 {
     public class MeshSplit : EditorWindow
     {
+#if UNITY_PROGRESSBAR
+        static MethodInfo m_Display = null;
+        static MethodInfo m_Clear = null;
+
+        float progress = -1.0f;
+        string progressText = "";
+
+        void ProgressBarInit(string startText)
+        {
+            progress = 0.0f;
+            progressText = startText;
+
+            var type = typeof(Editor).Assembly.GetTypes().Where(t => t.Name == "AsyncProgressBar").FirstOrDefault();
+
+            if (type != null)
+            {
+                m_Display = type.GetMethod("Display");
+                m_Clear = type.GetMethod("Clear");
+            }
+        }
+        void ProgressBarShow(string text, float percent)
+        {
+            progress = percent;
+            progressText = text;
+
+            if (m_Display != null)
+            {
+                m_Display.Invoke(null, new object[] { progressText, progress });
+                //Debug.Log("prog " + progress);
+                Canvas.ForceUpdateCanvases();
+            }
+        }
+        void ProgressBarEnd()
+        {
+            progress = 0.0f;
+            progressText = "";
+
+            if (m_Display != null)
+            {
+                m_Display.Invoke(null, new object[] { progressText, progress });
+                Canvas.ForceUpdateCanvases();
+            }
+
+            if (m_Clear != null)
+            {
+                m_Clear.Invoke(null, null);
+            }
+
+            m_Display = null;
+        }
+#else //!UNITY_PROGRESSBAR
         void ProgressBarInit(string startText)
         {
             EditorUtility.ClearProgressBar();
@@ -16,10 +71,11 @@ namespace MeshSplit
         {
             EditorUtility.DisplayProgressBar(text, text, percent);
         }
-        public void ProgressBarEnd(bool freeAreas = true)
+        public static void ProgressBarEnd(bool freeAreas = true)
         {
             EditorUtility.ClearProgressBar();
         }
+#endif //!UNITY_PROGRESSBAR
 
         [MenuItem("Window/Unique Tools/Mesh Splitter")]
         static void Open()
@@ -64,6 +120,8 @@ namespace MeshSplit
             }
 
             ProgressBarEnd();
+
+            AssetDatabase.SaveAssets();
         }
 
         // Apply transform recursively for a parent and it's children.
@@ -144,8 +202,13 @@ namespace MeshSplit
             {
                 return;
             }*/
+            if (meshRenderer.sharedMaterials.Length < 2)
+            {// Skip, it has no subs...
+                return;
+            }
+
             Debug.Log("MeshSplit:: Splitting mesh for object (" + transform.name + ").");
-            var originalMeshName = meshFilter.sharedMesh.name;
+            string originalMeshName = meshFilter.sharedMesh.name;
             
             
 
@@ -168,12 +231,19 @@ namespace MeshSplit
                 var newMesh = new Mesh();//Instantiate(meshFilter.sharedMesh);
                 newMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
 
-                var materialName = materials[i].name;
-
-                //newMesh.SetTriangles(meshFilter.sharedMesh.GetTriangles(i), 0, true, (int)meshFilter.sharedMesh.GetBaseVertex(i));
+                string materialName = materials[i].name;
+                string new_mesh_name = "SplitMesh_" + materialName + "_" + (int)Mathf.Abs(newMesh.GetHashCode());
+                string prefabPath = "Assets/Split Meshes/" + new_mesh_name + ".asset";
+                newMesh.name = new_mesh_name;
 
                 var oldVerts = new List<Vector3>();
                 meshFilter.sharedMesh.GetVertices(oldVerts);
+                
+                var vertReplacements = new List<int>();
+                for (int j = 0; j < oldVerts.Count; j++)
+                {
+                    vertReplacements.Add(-1);
+                }
 
                 var oldTris = meshFilter.sharedMesh.GetTriangles(i);
 
@@ -196,36 +266,46 @@ namespace MeshSplit
                     var oldVert = oldVerts[oldTri];
                     var oldNormal = oldNormals[oldTri];
 
-                    newVerts.Add(oldVert);
-                    newNormals.Add(oldNormal);
+                    // First check if we already have a vert at the same position in the new mesh, re-use it if we do...
+                    int found = vertReplacements[oldTri];
 
-                    var newTri = j;
-                    newTris.Add(j);
-
-                    if (uv1s.Count >= oldTri)
-                    {
-                        newUv1s.Add(uv1s[oldTri]);
+                    if (found >= 0)
+                    {// Reuse the old vert...
+                        newTris.Add(found);
                     }
+                    else
+                    {// Vert position not already in the list, add a new one...
+                        newVerts.Add(oldVert);
+                        newNormals.Add(oldNormal);
+                        newTris.Add(newVerts.Count - 1);
 
-                    if (uv2s.Count > 0 && uv2s.Count >= oldTri)
-                    {
-                        newUv2s.Add(uv2s[oldTri]);
-                    }
+                        if (uv1s.Count > 0 && uv1s.Count >= oldTri)
+                        {
+                            newUv1s.Add(uv1s[oldTri]);
+                        }
 
-                    if (uv3s.Count > 0 && uv3s.Count >= oldTri)
-                    {
-                        newUv3s.Add(uv3s[oldTri]);
-                    }
+                        if (uv2s.Count > 0 && uv2s.Count >= oldTri)
+                        {
+                            newUv2s.Add(uv2s[oldTri]);
+                        }
 
-                    if (uv4s.Count > 0 && uv4s.Count >= oldTri)
-                    {
-                        newUv4s.Add(uv4s[oldTri]);
+                        if (uv3s.Count > 0 && uv3s.Count >= oldTri)
+                        {
+                            newUv3s.Add(uv3s[oldTri]);
+                        }
+
+                        if (uv4s.Count > 0 && uv4s.Count >= oldTri)
+                        {
+                            newUv4s.Add(uv4s[oldTri]);
+                        }
+                        
+                        vertReplacements[oldTri] = newVerts.Count - 1;
                     }
                 }
 
                 newMesh.SetVertices(newVerts);
-                newMesh.SetTriangles(newTris, 0);
                 newMesh.SetNormals(newNormals);
+                newMesh.SetTriangles(newTris, 0);
                 newMesh.SetUVs(0, newUv1s);
                 newMesh.SetUVs(1, newUv2s);
                 newMesh.SetUVs(2, newUv3s);
@@ -235,48 +315,40 @@ namespace MeshSplit
                 if (!AssetDatabase.IsValidFolder("Assets/Split Meshes"))
                     AssetDatabase.CreateFolder("Assets", "Split Meshes");
 
-                var prefabPath = "";
-
-                var new_mesh_name = string.Format("SplitMesh_{0}_{1}_{2}_{3}",
-                    transform.name, originalMeshName, materialName, (int)Mathf.Abs(newMesh.GetHashCode()));
-
-                if (new_mesh_name.StartsWith("SplitMesh"))
-                {
-                    Debug.Log("MeshSplit:: Replacing existing split mesh (" + new_mesh_name + ").");
-                    prefabPath = "Assets/Split Meshes/" + new_mesh_name + ".asset";
-                }
-                else
-                {
-                    newMesh.name = new_mesh_name;
-                    prefabPath = "Assets/Split Meshes/" + new_mesh_name + ".asset";
-                }
-
-
-
-
                 var newGameObject = new GameObject();
                 var newMeshFilter = newGameObject.AddComponent<MeshFilter>();
                 var newMeshRenderer = newGameObject.AddComponent<MeshRenderer>();
 
                 newGameObject.name = new_mesh_name;
+                newGameObject.transform.parent = transform;
 
                 Vector3 zero;
                 zero.x = 0.0f;
                 zero.y = 0.0f;
                 zero.z = 0.0f;
-                newGameObject.transform.position = zero;
+
+                Vector3 scale;
+                scale.x = 1.0f;
+                scale.y = 1.0f;
+                scale.z = 1.0f;
+                newGameObject.transform.localPosition = zero;
+                newGameObject.transform.localRotation = Quaternion.identity;
+                newGameObject.transform.localScale = scale;
 
                 Material[] newMats = new Material[1];
                 newMats.SetValue(materials[i], 0);
                 newMeshRenderer.sharedMaterials = newMats;
-
-                //meshFilter.sharedMesh = newMesh;
                 newMeshFilter.sharedMesh = newMesh;
 
                 AssetDatabase.CreateAsset(newMesh, prefabPath);
             }
 
-            AssetDatabase.SaveAssets();
+            //AssetDatabase.SaveAssets();
+
+
+            //meshRenderer.enabled = false;
+            DestroyImmediate(meshRenderer, false);
+            DestroyImmediate(meshFilter, false);
         }
 
         public static void ApplyInverseTransform(Transform transform, Mesh mesh)

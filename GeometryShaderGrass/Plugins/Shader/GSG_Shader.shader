@@ -403,9 +403,12 @@
 
 				float4 outColor = tex2D(_MainTex, i.uv);
 				float shadow = SHADOW_ATTENUATION(i);
-				float3 normal = normalize(i.normal);
+				float3 normal = normalize(i.normal.xyz);
 				float3 ambientLighting = ShadeSH9(float4(normal, 1));
 
+				UNITY_LIGHT_ATTENUATION(atten, i, i.worldPosition);
+
+				float3 pointlights = atten * _LightColor0.rgb;
 
 #ifdef FEATURE_WIND
 				outColor += (_WindColor * i.color.g * i.uv.y);
@@ -421,9 +424,11 @@
 				//float4 gradient = lerp(_BottomColor, _TopColor, i.uv.y);
 				//float grad = max(gradient.r, max(gradient.g, gradient.b));
 				outColor.rgb *= clamp(pow(clamp((i.uv.y - 0.25), 0.0, 1.0), 2.0) + 0.3, 0.0, 1.0);
-
+				
+				//float3 lightDirection = normalize(_WorldSpaceLightPos0.xyz);
+				//float3 viewDir = normalize(i.viewDir);
 				//outColor.rgb *= diffuseReflection + (specularReflection + diffuseTranslucency + forwardTranslucency) * i.uv.y;
-				outColor.rgb *= _LightColor0 * shadow + ambientLighting;
+				outColor.rgb *= _LightColor0 * shadow + pointlights + ambientLighting + _SpecularColour.rgb;
 
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, outColor);
@@ -436,7 +441,7 @@
 //--------------------------------------------------------------------------
 // Additional Lights Pass
 //--------------------------------------------------------------------------
-		Pass
+		/*Pass
 		{
 			Tags {"LightMode" = "ForwardAdd"}
 			Cull Off
@@ -473,7 +478,7 @@
 			}
 
 			ENDCG
-		}
+		}*/
 
 //--------------------------------------------------------------------------
 // ShadowCaster Pass
