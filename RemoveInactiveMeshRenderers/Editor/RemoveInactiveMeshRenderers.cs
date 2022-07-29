@@ -1,27 +1,9 @@
-﻿//#define INWINDOW_PROGRESS
-#define UNITY_PROGRESSBAR
-
-// Disable 'obsolete' warnings
+﻿// Disable 'obsolete' warnings
 #pragma warning disable 0618
 
-using System.Collections.Generic;
-using System.IO;
 using UnityEditor;
 using UnityEngine;
-
-
-using System.Text;
-using System.Collections;
-using System.Runtime.InteropServices;
-using UnityEditor.SceneManagement;
-using UnityEngine.SceneManagement;
-using System.Text.RegularExpressions;
-using System.Linq;
-using System.Reflection;
-
-using System.Threading;
-using System.Threading.Tasks;
-using UnityEngine.AI;
+using static ProgressBarAPI.API;
 
 namespace RemoveInactiveMeshRenderers
 {
@@ -30,96 +12,6 @@ namespace RemoveInactiveMeshRenderers
     {
         public bool removeFilters = true;
         
-#if UNITY_PROGRESSBAR
-        static MethodInfo m_Display = null;
-        static MethodInfo m_Clear = null;
-
-        float progress = -1.0f;
-        string progressText = "";
-
-        void ProgressBarInit(string startText)
-        {
-            progress = 0.0f;
-            progressText = startText;
-
-            var type = typeof(Editor).Assembly.GetTypes().Where(t => t.Name == "AsyncProgressBar").FirstOrDefault();
-
-            if (type != null)
-            {
-                m_Display = type.GetMethod("Display");
-                m_Clear = type.GetMethod("Clear");
-            }
-        }
-        void ProgressBarShow(string text, float percent)
-        {
-            progress = percent;
-            progressText = text;
-
-            if (m_Display != null)
-            {
-                m_Display.Invoke(null, new object[] { progressText, progress });
-                //Debug.Log("prog " + progress);
-                Canvas.ForceUpdateCanvases();
-            }
-        }
-        void ProgressBarEnd()
-        {
-            progress = 0.0f;
-            progressText = "";
-
-            if (m_Display != null)
-            {
-                m_Display.Invoke(null, new object[] { progressText, progress });
-                Canvas.ForceUpdateCanvases();
-            }
-
-            if (m_Clear != null)
-            {
-                m_Clear.Invoke(null, null);
-            }
-
-            m_Display = null;
-        }
-#elif INWINDOW_PROGRESS
-        float progress = -1.0f;
-        string progressText = "";
-
-        void ProgressBarInit(string startText)
-        {
-            progress = 0.0f;
-            progressText = startText;
-        }
-        void ProgressBarShow(string text, float percent)
-        {
-            progress = percent;
-            progressText = text;
-
-            //Debug.Log("prog " + progress);
-
-            //Debug.Log("REPAINT!");
-            //Repaint();
-        }
-        void ProgressBarEnd()
-        {
-            progress = -1.0f;
-            progressText = "";
-        }
-#else //
-        void ProgressBarInit(string startText)
-        {
-            EditorUtility.ClearProgressBar();
-            EditorUtility.DisplayProgressBar(startText, startText, 0);
-        }
-        void ProgressBarShow(string text, float percent)
-        {
-            EditorUtility.DisplayProgressBar(text, text, percent);
-        }
-        public static void ProgressBarEnd(bool freeAreas = true)
-        {
-            EditorUtility.ClearProgressBar();
-        }
-#endif //INWINDOW_PROGRESS
-
         [MenuItem("Window/Unique Tools/Remove Inactive Mesh Renderers")]
         static void Open()
         {
