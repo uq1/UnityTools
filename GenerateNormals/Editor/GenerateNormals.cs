@@ -195,7 +195,48 @@ namespace GenerateNormals
                         }
                     }
 
+                    sum = sum.normalized;
+
+                    /*if (sum.x == 0.0f && sum.y == 0.0f && sum.z == 0.0f)
+                    {
+                        sum.x = 0.0f;
+                        sum.y = 1.0f;
+                        sum.z = 0.0f;
+                        sum = sum.normalized;
+                    }*/
+
                     normals[lhsEntry.VertexIndex] = sum.normalized;
+                }
+            }
+
+            // Because it is possible to get 0,0,0 normals using cross product, this is very bad... Find them and use the closest valid normal...
+            for (int i = 0; i < normals.Length; i++)
+            {
+                Vector3 n = normals[i];
+
+                if (n.x == 0.0f && n.y == 0.0f && n.z == 0.0f)
+                {
+                    int closest = 0;
+                    float closestDist = 99999.9f;
+
+                    for (int j = 0; j < normals.Length; j++)
+                    {
+                        Vector3 n2 = normals[j];
+
+                        if (!(n2.x == 0.0f && n2.y == 0.0f && n2.z == 0.0f))
+                        {
+                            float dist = Vector3.Distance(vertices[i], vertices[j]);
+
+                            if (dist < closestDist)
+                            {
+                                closest = j;
+                                closestDist = dist;
+                            }
+                        }
+                        
+                    }
+
+                    normals[i] = normals[closest];
                 }
             }
 
