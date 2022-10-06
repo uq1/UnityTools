@@ -363,53 +363,11 @@
 			
             fixed4 frag (g2f i) : SV_Target
             {
-				/*
-				float4 gradient = lerp(_BottomColor, _TopColor, i.uv.y);
-				
-                // sample the texture
-                float4 texColor = tex2D(_MainTex, i.uv);
-
-				float4 outColor = gradient;
-
-#ifdef FEATURE_WIND
-				outColor += (_WindColor * i.color.g * i.uv.y);
-#endif
-				outColor *= texColor;
-				outColor.a = texColor.a;
-
-				//Makes the edges smoother when using AlphaToCoverage
-				outColor.a *= 1 + max(0, CalcMipLevel(i.uv * _MainTex_TexelSize.zw))*_MipScale;
-				outColor.a = (outColor.a - _Cutoff) / max(fwidth(outColor.a), 0.0001) + 0.5;
-
-				float3 normal = normalize(i.normal);
-
-				
-//--------------------------------------------------------------------------
-// LIGHTING
-//--------------------------------------------------------------------------
-				//float3 lightDirection = normalize(_WorldSpaceLightPos0.rgb);
-				//float3 lightDirection = normalize(_WorldSpaceLightPos0.xyz);
-				//float3 viewDir = normalize(i.viewDir);
-				float shadow = SHADOW_ATTENUATION(i);
-
-				float3 ambientLighting = ShadeSH9(float4(normal, 1));
-				//float3 diffuseReflection = _LightColor0.rgb * max(0.0, dot(normal, lightDirection));
-				//float3 specularReflection = _LightColor0.rgb * _SpecularColour * pow(max(0.0, saturate(dot(reflect(-lightDirection, normal), viewDir))), _Shininess);
-				//float3 diffuseTranslucency = _LightColor0.rgb * _TranslucentColour * max(0.0, dot(lightDirection, -normal));
-				//float3 forwardTranslucency = _LightColor0.rgb * _TranslucentColour * pow(max(0.0, saturate(dot(-lightDirection, viewDir))), _Sharpness);
-
-				outColor.rgb *= gradient;
-				*/
-
 				float4 outColor = tex2D(_MainTex, i.uv);
 				float shadow = SHADOW_ATTENUATION(i);
-				float3 normal = normalize(i.normal.xyz);
-				float3 ambientLighting = ShadeSH9(float4(normal, 1));
 
 				UNITY_LIGHT_ATTENUATION(atten, i, i.worldPosition);
 
-				float3 pointlights = atten * _LightColor0.rgb;
-
 #ifdef FEATURE_WIND
 				outColor += (_WindColor * i.color.g * i.uv.y);
 #endif
@@ -418,17 +376,8 @@
 				outColor.a *= 1 + max(0, CalcMipLevel(i.uv * _MainTex_TexelSize.zw))*_MipScale;
 				outColor.a = (outColor.a - _Cutoff) / max(fwidth(outColor.a), 0.0001) + 0.5;
 
-
-
-
-				//float4 gradient = lerp(_BottomColor, _TopColor, i.uv.y);
-				//float grad = max(gradient.r, max(gradient.g, gradient.b));
 				outColor.rgb *= clamp(pow(clamp((i.uv.y - 0.25), 0.0, 1.0), 2.0) + 0.3, 0.0, 1.0);
-				
-				//float3 lightDirection = normalize(_WorldSpaceLightPos0.xyz);
-				//float3 viewDir = normalize(i.viewDir);
-				//outColor.rgb *= diffuseReflection + (specularReflection + diffuseTranslucency + forwardTranslucency) * i.uv.y;
-				outColor.rgb *= _LightColor0 * shadow + pointlights + ambientLighting + _SpecularColour.rgb;
+				outColor.rgb *= _LightColor0 * shadow;
 
                 // apply fog
                 UNITY_APPLY_FOG(i.fogCoord, outColor);
@@ -483,27 +432,38 @@
 //--------------------------------------------------------------------------
 // ShadowCaster Pass
 //--------------------------------------------------------------------------
+/*
 		Pass
 		{
 			Tags {"LightMode" = "ShadowCaster"}
 			Cull Off
-			//AlphaToMask On
-
+			AlphaToMask On
 			CGPROGRAM
 			#pragma fragment fragShadow
-
-			#pragma target 4.6
 			#pragma multi_compile_shadowcaster
 
-			float4 fragShadow(g2f i) : SV_Target
+			#pragma target 4.6
+
+			#include "Lighting.cginc"
+
+			float4 _MainTex_TexelSize;
+			half _MipScale;
+
+			fixed4 fragShadow(g2f i) : SV_Target
 			{
-				fixed4 col = tex2D(_MainTex, i.uv);
-				clip(col.a - _Cutoff);
+				float col = tex2D(_MainTex, i.uv).a;
+
+				//Makes the edges smoother when using AlphaToCoverage
+				col *= 1 + max(0, CalcMipLevel(i.uv * _MainTex_TexelSize.zw)) * _MipScale;
+				col = (col - _Cutoff) / max(fwidth(col), 0.0001) + 0.5;
+
+				//return outColor;
+				clip(col - _Cutoff);
 
 				SHADOW_CASTER_FRAGMENT(i);
 			}
-
 			ENDCG
 		}
+*/
     }
 }
