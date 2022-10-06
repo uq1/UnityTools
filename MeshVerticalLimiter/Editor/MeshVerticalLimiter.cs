@@ -142,6 +142,12 @@ namespace MeshVerticalLimiter
                 var oldVerts = new List<Vector3>();
                 meshFilter.sharedMesh.GetVertices(oldVerts);
 
+                var vertReplacements = new List<int>();
+                for (int j = 0; j < oldVerts.Count; j++)
+                {
+                    vertReplacements.Add(-1);
+                }
+
                 var oldTris = meshFilter.sharedMesh.GetTriangles(i);
 
                 var oldNormals = new List<Vector3>();
@@ -160,7 +166,7 @@ namespace MeshVerticalLimiter
 
                 if (oldUV2s.Count > 0) haveUV2 = true;
 
-                for (int j = 0; j < oldTris.Length; j+=3)
+                for (int j = 0; j < oldTris.Length; j += 3)
                 {
                     var oldTri1 = oldTris[j];
                     var oldVert1 = oldVerts[oldTri1];
@@ -168,7 +174,7 @@ namespace MeshVerticalLimiter
                     Vector2 oldUV11 = new Vector2();
                     Vector2 oldUV21 = new Vector2();
 
-                    var oldTri2 = oldTris[j+1];
+                    var oldTri2 = oldTris[j + 1];
                     var oldVert2 = oldVerts[oldTri2];
                     var oldNormal2 = oldNormals[oldTri2];
                     Vector2 oldUV12 = new Vector2();
@@ -190,6 +196,11 @@ namespace MeshVerticalLimiter
                         continue;
                     }
 
+                    // First check if we already have a vert at the same position in the new mesh, re-use it if we do...
+                    int found1 = vertReplacements[oldTri1];
+                    int found2 = vertReplacements[oldTri2];
+                    int found3 = vertReplacements[oldTri3];
+
                     if (haveUV1)
                     {
                         oldUV11 = oldUV1s[oldTri1];
@@ -204,26 +215,53 @@ namespace MeshVerticalLimiter
                         oldUV23 = oldUV2s[oldTri3];
                     }
 
-                    newVerts.Add(oldVert1);
-                    newNormals.Add(oldNormal1);
-                    newTris.Add(current_vert);
-                    if (haveUV1) newUV1s.Add(oldUV11);
-                    if (haveUV2) newUV2s.Add(oldUV21);
-                    current_vert++;
+                    if (found1 >= 0)
+                    {// Reuse the old vert...
+                        newTris.Add(found1);
+                    }
+                    else
+                    {
+                        newVerts.Add(oldVert1);
+                        newNormals.Add(oldNormal1);
+                        newTris.Add(current_vert);
+                        if (haveUV1) newUV1s.Add(oldUV11);
+                        if (haveUV2) newUV2s.Add(oldUV21);
+                        current_vert++;
 
-                    newVerts.Add(oldVert2);
-                    newNormals.Add(oldNormal2);
-                    newTris.Add(current_vert);
-                    if (haveUV1) newUV1s.Add(oldUV12);
-                    if (haveUV2) newUV2s.Add(oldUV22);
-                    current_vert++;
+                        vertReplacements[oldTri1] = newVerts.Count - 1;
+                    }
 
-                    newVerts.Add(oldVert3);
-                    newNormals.Add(oldNormal3);
-                    newTris.Add(current_vert);
-                    if (haveUV1) newUV1s.Add(oldUV13);
-                    if (haveUV2) newUV2s.Add(oldUV23);
-                    current_vert++;
+                    if (found2 >= 0)
+                    {// Reuse the old vert...
+                        newTris.Add(found2);
+                    }
+                    else
+                    {
+                        newVerts.Add(oldVert2);
+                        newNormals.Add(oldNormal2);
+                        newTris.Add(current_vert);
+                        if (haveUV1) newUV1s.Add(oldUV12);
+                        if (haveUV2) newUV2s.Add(oldUV22);
+                        current_vert++;
+
+                        vertReplacements[oldTri2] = newVerts.Count - 1;
+                    }
+
+                    if (found3 >= 0)
+                    {// Reuse the old vert...
+                        newTris.Add(found3);
+                    }
+                    else
+                    {
+                        newVerts.Add(oldVert3);
+                        newNormals.Add(oldNormal3);
+                        newTris.Add(current_vert);
+                        if (haveUV1) newUV1s.Add(oldUV13);
+                        if (haveUV2) newUV2s.Add(oldUV23);
+                        current_vert++;
+
+                        vertReplacements[oldTri3] = newVerts.Count - 1;
+                    }
                 }
             }
 
