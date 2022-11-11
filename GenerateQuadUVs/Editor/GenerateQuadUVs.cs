@@ -20,17 +20,28 @@ namespace GenerateQuadUVs
         private bool _flipX = false;
         private bool _flipY = false;
         private bool _invertedUVs = false;
+        private bool _swapXY = false;
 
         void OnGUI()
         {
             _flipX = EditorGUILayout.Toggle("Flip X?", _flipX);
             _flipY = EditorGUILayout.Toggle("Flip Y?", _flipY);
             _invertedUVs = EditorGUILayout.Toggle("Inverted UVs?", _invertedUVs);
-            
+            _swapXY = EditorGUILayout.Toggle("Swap X and Y coordinates?", _swapXY);
+
+
             if (GUILayout.Button("Generate Quad UVs"))
             {
                 GenerateMeshUVs();
             }
+        }
+
+        Vector2 SwapXY(Vector2 uv_in)
+        {
+            Vector2 uv = new Vector2();
+            uv.x = uv_in.y;
+            uv.y = uv_in.x;
+            return uv;
         }
 
         void GenerateMeshUVs()
@@ -79,6 +90,14 @@ namespace GenerateQuadUVs
                             uv1 = new Vector2(_flipX ? -1 : 1, _flipY ? -1 : 1);
                             uv2 = new Vector2(_flipX ? -1 : 1, 0);
                             uv3 = new Vector2(0, 0);
+                        }
+
+                        if (_swapXY)
+                        {
+                            uv0 = SwapXY(uv0);
+                            uv1 = SwapXY(uv1);
+                            uv2 = SwapXY(uv2);
+                            uv3 = SwapXY(uv3);
                         }
                         
                         uvs.Add(uv0);
