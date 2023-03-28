@@ -24,6 +24,7 @@ namespace MergeIdenticalMaterials
     [ExecuteInEditMode]
     public class MergeIdenticalMaterials : EditorWindow
     {
+        public bool texturedColorCheck = true;
         public bool showChanges = false;
 
         private int numReplaced = 0;
@@ -54,6 +55,7 @@ namespace MergeIdenticalMaterials
 
         void OnGUI()
         {
+            texturedColorCheck = EditorGUILayout.Toggle("Check colors are identical when textured?", texturedColorCheck);
             showChanges = EditorGUILayout.Toggle("List changes in console?", showChanges);
             EditorGUILayout.Space();
 
@@ -88,10 +90,38 @@ namespace MergeIdenticalMaterials
 
             if (origMat.mainTexture != uniqueMat.mainTexture)
             {
+                if (origMat.mainTexture == null || uniqueMat.mainTexture == null)
+                {
+                    return false;
+                }
+
+                if (origMat.mainTexture.imageContentsHash != uniqueMat.mainTexture.imageContentsHash)
+                {
+                    return false;
+                }
+            }
+
+            if (origMat.color != uniqueMat.color && !(!texturedColorCheck && (origMat.mainTexture != null || uniqueMat.mainTexture != null)))
+            {
                 return false;
             }
 
-            if (origMat.color != uniqueMat.color)
+            if (origMat.HasProperty("_MainTex") != uniqueMat.HasProperty("_MainTex"))
+            {
+                return false;
+            }
+
+            if (origMat.HasProperty("_BaseMap") != uniqueMat.HasProperty("_BaseMap"))
+            {
+                return false;
+            }
+
+            if (origMat.HasProperty("_BaseColorMap") != uniqueMat.HasProperty("_BaseColorMap"))
+            {
+                return false;
+            }
+
+            if (origMat.HasProperty("_EmissionMap") != uniqueMat.HasProperty("_EmissionMap"))
             {
                 return false;
             }
@@ -100,7 +130,10 @@ namespace MergeIdenticalMaterials
             {
                 if (origMat.GetTexture("_MainTex") != uniqueMat.GetTexture("_MainTex"))
                 {
-                    return false;
+                    if (origMat.GetTexture("_MainTex").imageContentsHash != uniqueMat.GetTexture("_MainTex").imageContentsHash)
+                    {
+                        return false;
+                    }
                 }
             }
 
@@ -108,7 +141,10 @@ namespace MergeIdenticalMaterials
             {
                 if (origMat.GetTexture("_BaseMap") != uniqueMat.GetTexture("_BaseMap"))
                 {
-                    return false;
+                    if (origMat.GetTexture("_BaseMap").imageContentsHash != uniqueMat.GetTexture("_BaseMap").imageContentsHash)
+                    {
+                        return false;
+                    }
                 }
             }
 
@@ -116,7 +152,10 @@ namespace MergeIdenticalMaterials
             {
                 if (origMat.GetTexture("_BaseColorMap") != uniqueMat.GetTexture("_BaseColorMap"))
                 {
-                    return false;
+                    if (origMat.GetTexture("_BaseColorMap").imageContentsHash != uniqueMat.GetTexture("_BaseColorMap").imageContentsHash)
+                    {
+                        return false;
+                    }
                 }
             }
 
@@ -124,7 +163,10 @@ namespace MergeIdenticalMaterials
             {
                 if (origMat.GetTexture("_EmissionMap") != uniqueMat.GetTexture("_EmissionMap"))
                 {
-                    return false;
+                    if (origMat.GetTexture("_EmissionMap").imageContentsHash != uniqueMat.GetTexture("_EmissionMap").imageContentsHash)
+                    {
+                        return false;
+                    }
                 }
             }
 
