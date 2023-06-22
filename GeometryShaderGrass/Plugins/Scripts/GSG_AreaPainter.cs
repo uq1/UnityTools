@@ -24,6 +24,7 @@ namespace GeometryShaderGrass
         [SerializeField] int randomSeed = 0;
         [SerializeField] bool useSeed = true;
         [SerializeField] float rayStartHeight = 100;
+        [SerializeField] float rayEndHeight = -9999;
         public bool uniform = true;
         [SerializeField] Vector2 grassHeightRange = Vector2.one;
         [SerializeField] Vector2 grassWidthRange = Vector2.one;
@@ -159,7 +160,8 @@ namespace GeometryShaderGrass
             var setupRaycastsJob = new PrepareRaycastCommands()
             {
                 Raycasts = raycastCommands,
-                Positions = rayPositions
+                Positions = rayPositions,
+                rayEndHeight = rayEndHeight
             };
 
             var setupDependency = setupRaycastsJob.Schedule(amount, 32, default(JobHandle));
@@ -215,11 +217,12 @@ namespace GeometryShaderGrass
             public NativeArray<RaycastCommand> Raycasts;
             [ReadOnly]
             public NativeArray<Vector3> Positions;
+            public float rayEndHeight;
 
 
             public void Execute(int i)
             {
-                Raycasts[i] = new RaycastCommand(Positions[i], Vector3.down);
+                Raycasts[i] = new RaycastCommand(Positions[i], Vector3.down, Positions[i].y - rayEndHeight);
             }
         }
 

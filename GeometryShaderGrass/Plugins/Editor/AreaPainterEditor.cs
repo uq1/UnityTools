@@ -18,6 +18,7 @@ namespace GeometryShaderGrass
         SerializedProperty randomSeed;
         SerializedProperty useSeed;
         SerializedProperty rayStartHeight;
+        SerializedProperty rayEndHeight;
         SerializedProperty grassHeightRange;
         SerializedProperty grassWidthRange;
 
@@ -42,6 +43,7 @@ namespace GeometryShaderGrass
             randomSeed = serializedObject.FindProperty("randomSeed");
             useSeed = serializedObject.FindProperty("useSeed");
             rayStartHeight = serializedObject.FindProperty("rayStartHeight");
+            rayEndHeight = serializedObject.FindProperty("rayEndHeight");
             grassHeightRange = serializedObject.FindProperty("grassHeightRange");
             grassWidthRange = serializedObject.FindProperty("grassWidthRange");
 
@@ -95,6 +97,7 @@ namespace GeometryShaderGrass
                 GUI.enabled = true;
 
                 EditorGUILayout.PropertyField(rayStartHeight);
+                EditorGUILayout.PropertyField(rayEndHeight);
 
                 using (var horizontalScope = new GUILayout.HorizontalScope())
                 {
