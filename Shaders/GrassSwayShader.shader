@@ -3,6 +3,7 @@
 Shader "Custom/GrassSwayShader" {
 	Properties{
 		_MainTex("Base (RGB) Trans (A)", 2D) = "white" {}
+		_Color("Color", Color) = (1.0, 1.0, 1.0, 1.0)
 		_Cutoff("Alpha cutoff", Range(0,1)) = 0.5
 		_ShakeDisplacement("Displacement", Range(0, 1.0)) = 1.0
 		_ShakeTime("Shake Time", Range(0, 1.0)) = 0.15
@@ -18,6 +19,7 @@ Shader "Custom/GrassSwayShader" {
 		#pragma target 3.0
 		#pragma surface surf Lambert alphatest:_Cutoff vertex:vert addshadow
 		sampler2D _MainTex;
+		float4 _Color;
 		float _ShakeDisplacement;
 		float _ShakeTime;
 		float _ShakeWindspeed;
@@ -74,7 +76,7 @@ Shader "Custom/GrassSwayShader" {
 
 		}
 		void surf(Input IN, inout SurfaceOutput o) {
-			fixed4 c = tex2D(_MainTex, IN.uv_MainTex);
+			fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
 			o.Albedo = c.rgb;
 			o.Alpha = c.a;
 		}
