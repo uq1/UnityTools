@@ -71,7 +71,11 @@ namespace MeshRemoveIntersectingVerts
             }
 
             // Make sure we have some bounds to use...
-            mf.sharedMesh.RecalculateBounds();
+            if (bounds.GetComponent<BoxCollider>() == null)
+            {
+                mf.sharedMesh.RecalculateBounds();
+                bounds.AddComponent<BoxCollider>();
+            }
 
             ProgressBarInit("Culling Meshes By Cube Bounds...");
 
@@ -140,9 +144,21 @@ namespace MeshRemoveIntersectingVerts
         // Apply an individual transform.
         public void GenerateNewMesh(GameObject gameObject)
         {
-            MeshFilter mf = bounds.GetComponent<MeshFilter>();
-            Mesh mesh = mf.sharedMesh;
-            Bounds boundsCube = mesh.bounds;
+            //MeshFilter mf = bounds.GetComponent<MeshFilter>();
+            //Mesh mesh = mf.sharedMesh;
+            //Bounds boundsCube = mesh.bounds;
+
+            BoxCollider collider = bounds.GetComponent<BoxCollider>();
+            Bounds boundsCube = collider.bounds;
+
+            //boundsCube.min.Scale(bounds.transform.lossyScale);
+            //boundsCube.max.Scale(bounds.transform.lossyScale);
+
+            Vector3 min = boundsCube.min;// + bounds.transform.position;
+            Vector3 max = boundsCube.max;// + bounds.transform.position;
+
+            //Debug.Log("MeshRemoveIntersectingVerts:: bounds " + min + " x " + max + ").");
+            //return;
 
             var meshFilter = gameObject.GetComponent<MeshFilter>();
             var meshRenderer = gameObject.GetComponent<MeshRenderer>();
@@ -256,75 +272,41 @@ namespace MeshRemoveIntersectingVerts
                     Vector2 oldUV13 = new Vector2();
                     Vector2 oldUV23 = new Vector2();
 
-                    /*
-                    Ray ray1 = new Ray();
-                    ray1.origin = oldVert1;
-                    ray1.direction = oldVert1 - oldVert2;
-                    //ray1.direction.Normalize();
-
-                    Ray ray2 = new Ray();
-                    ray2.origin = oldVert2;
-                    ray2.direction = oldVert2 - oldVert3;
-                    //ray2.direction.Normalize();
-
-                    Ray ray3 = new Ray();
-                    ray3.origin = oldVert3;
-                    ray3.direction = oldVert3 - oldVert1;
-                    //ray3.direction.Normalize();
-
-                    float distance = 0.0f;
-
-                    if (boundsCube.IntersectRay(ray1, out distance))
+                    if ((oldVert1.x >= min.x && oldVert1.y >= min.y && oldVert1.z >= min.z && oldVert1.x <= max.x && oldVert1.y <= max.y && oldVert1.z <= max.z))
                     {
-                        Debug.Log("MeshRemoveIntersectingVerts:: ray1 (tri " + oldTri1 + " -> " + oldTri2 + ") intersects bounds.");
-
-                        //if (boundsCube.Contains(ray1.GetPoint(distance)))
-                        {
-                            //Debug.Log("MeshRemoveIntersectingVerts:: ray1 hit inside bounds.");
-                            continue;
-                        }
+                        //Debug.Log("MeshRemoveIntersectingVerts:: Vert1 found inside bounds.");
+                        continue;
                     }
 
-                    if (boundsCube.IntersectRay(ray2, out distance))
+                    if ((oldVert2.x >= min.x && oldVert2.y >= min.y && oldVert2.z >= min.z && oldVert2.x <= max.x && oldVert2.y <= max.y && oldVert2.z <= max.z))
                     {
-                        Debug.Log("MeshRemoveIntersectingVerts:: ray2 (tri " + oldTri2 + " -> " + oldTri3 + ") intersects bounds.");
-
-                        //if (boundsCube.Contains(ray2.GetPoint(distance)))
-                        {
-                            //Debug.Log("MeshRemoveIntersectingVerts:: ray2 hit inside bounds.");
-                            continue;
-                        }
+                        //Debug.Log("MeshRemoveIntersectingVerts:: Vert2 found inside bounds.");
+                        continue;
                     }
 
-                    if (boundsCube.IntersectRay(ray3, out distance))
+                    if ((oldVert3.x >= min.x && oldVert3.y >= min.y && oldVert3.z >= min.z && oldVert3.x <= max.x && oldVert3.y <= max.y && oldVert3.z <= max.z))
                     {
-                        Debug.Log("MeshRemoveIntersectingVerts:: ray3 (tri " + oldTri3 + " -> " + oldTri1 + ") intersects bounds.");
-
-                        //if (boundsCube.Contains(ray3.GetPoint(distance)))
-                        {
-                            //Debug.Log("MeshRemoveIntersectingVerts:: ray3 hit inside bounds.");
-                            continue;
-                        }
+                        //Debug.Log("MeshRemoveIntersectingVerts:: Vert3 found inside bounds.");
+                        continue;
                     }
-                    */
 
                     Vector3 hit = new Vector3();
 
                     if (CheckLineBox(boundsCube.min + bounds.transform.position, boundsCube.max + bounds.transform.position, oldVert1, oldVert2, ref hit))
                     {
-                        Debug.Log("MeshRemoveIntersectingVerts:: ray1 (tri " + oldTri1 + " -> " + oldTri2 + ") intersects bounds.");
+                        //Debug.Log("MeshRemoveIntersectingVerts:: ray1 (tri " + oldTri1 + " -> " + oldTri2 + ") intersects bounds.");
                         continue;
                     }
 
                     if (CheckLineBox(boundsCube.min + bounds.transform.position, boundsCube.max + bounds.transform.position, oldVert2, oldVert3, ref hit))
                     {
-                        Debug.Log("MeshRemoveIntersectingVerts:: ray2 (tri " + oldTri2 + " -> " + oldTri3 + ") intersects bounds.");
+                        //Debug.Log("MeshRemoveIntersectingVerts:: ray2 (tri " + oldTri2 + " -> " + oldTri3 + ") intersects bounds.");
                         continue;
                     }
 
                     if (CheckLineBox(boundsCube.min + bounds.transform.position, boundsCube.max + bounds.transform.position, oldVert3, oldVert1, ref hit))
                     {
-                        Debug.Log("MeshRemoveIntersectingVerts:: ray3 (tri " + oldTri3 + " -> " + oldTri1 + ") intersects bounds.");
+                        //Debug.Log("MeshRemoveIntersectingVerts:: ray3 (tri " + oldTri3 + " -> " + oldTri1 + ") intersects bounds.");
                         continue;
                     }
 
